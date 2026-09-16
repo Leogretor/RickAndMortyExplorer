@@ -1,117 +1,134 @@
 # AGENTS.md
 
-## Project snapshot
-- Single-module Android app (`:app`) written in Kotlin with Jetpack Compose, simple MVVM, Retrofit, and coroutines.
-- The repository root is this folder: `C:\Users\simon\AndroidStudioProjects\RickAndMortyExplorer`.
-- App entry point is `app/src/main/java/com/example/rickandmortyexplorer/MainActivity.kt`.
-- Main runtime flow is: `MainActivity` -> `navigation/AppNavHost.kt` -> ViewModels -> `domain/repository/CharacterRepository.kt` -> `data/repository/CharacterRepositoryImpl.kt` -> `data/remote/CharacterApi.kt` via `data/remote/RickAndMortyApi.kt`.
+## Repository summary
+
+`RickAndMortyExplorer` is a single-module Android app built with:
+
+- Kotlin
+- Jetpack Compose
+- MVVM
+- Retrofit + Gson
+- OkHttp
+- Kotlin coroutines
+- Coil for image loading
+
+Repository root:
+- `C:\Users\simon\AndroidStudioProjects\RickAndMortyExplorer`
+
+App entry point:
+- `app/src/main/java/com/example/rickandmortyexplorer/MainActivity.kt`
+
+Main runtime flow:
+- `MainActivity` -> `navigation/AppNavHost.kt` -> ViewModels -> `domain/repository/CharacterRepository.kt` -> `data/repository/CharacterRepositoryImpl.kt` -> `data/remote/CharacterApi.kt` via `data/remote/RickAndMortyApi.kt`
 
 ## High-level architecture
 
+The project uses a lightweight layered structure:
+
 ### Presentation layer
 - `presentation/characters/`
-  - `CharactersScreen.kt`: stateless list UI for loading, error, empty, and success states.
-  - `CharactersUiState.kt`: sealed UI state.
-  - `CharactersViewModel.kt`: loads characters on init and exposes a `StateFlow`.
+  - `CharactersScreen.kt`: stateless list UI for loading, error, empty, and success states
+  - `CharactersUiState.kt`: sealed screen state
+  - `CharactersViewModel.kt`: loads the character list and exposes a `StateFlow`
 - `presentation/characterdetail/`
-  - `CharacterDetailScreen.kt`: stateless detail UI for loading, error, and success states.
-  - `CharacterDetailUiState.kt`: sealed UI state.
-  - `CharacterDetailViewModel.kt`: loads one character by `characterId` and exposes a `StateFlow`.
+  - `CharacterDetailScreen.kt`: stateless detail UI for loading, error, and success states
+  - `CharacterDetailUiState.kt`: sealed screen state
+  - `CharacterDetailViewModel.kt`: loads a single character by id and exposes a `StateFlow`
+- `presentation/common/`
+  - `CharacterAsyncImage.kt`: shared Coil-based image composable with preview-safe fallback behavior
+  - `ThrowableMessage.kt`: shared mapping from exceptions to user-facing error messages
 
 ### Domain layer
 - `domain/model/Character.kt`
-  - Current fields: `id`, `name`, `status`, `species`, `gender`, `origin`, `image`.
+  - Current fields: `id`, `name`, `status`, `species`, `gender`, `origin`, `image`
 - `domain/repository/CharacterRepository.kt`
-  - Defines `getCharacters()` and `getCharacterById(id)`.
+  - Defines `getCharacters()` and `getCharacterById(id)`
 
 ### Data layer
 - `data/remote/CharacterApi.kt`
-  - Retrofit service interface with `getAllCharacters()` and `getCharacterById(id)`.
+  - Retrofit API interface with `getAllCharacters()` and `getCharacterById(id)`
 - `data/remote/RickAndMortyApi.kt`
-  - Singleton object that creates Retrofit lazily and exposes `service`.
+  - Lazily creates Retrofit with Gson and an `OkHttpClient` with timeouts
 - `data/remote/model/CharactersResponseDto.kt`
-  - DTOs for page info, character response, and nested named resources.
+  - DTOs for page info, character response, and nested named resources
 - `data/mapper/CharacterMapper.kt`
-  - Maps `CharacterDto` to the domain `Character`.
+  - Maps `CharacterDto` to the domain `Character`
 - `data/repository/CharacterRepositoryImpl.kt`
-  - Concrete repository implementation used by the app.
+  - Concrete repository implementation used by the app
 
 ### Navigation
 - `navigation/NavRoutes.kt`
-  - Defines `CHARACTER_LIST`, `CHARACTER_ID_ARG`, `CHARACTER_DETAIL`, and `characterDetail(characterId)`.
+  - Defines `CHARACTER_LIST`, `CHARACTER_ID_ARG`, `CHARACTER_DETAIL`, and `characterDetail(characterId)`
 - `navigation/AppNavHost.kt`
-  - Owns the two destinations and manually creates ViewModels via factories.
-  - Detail navigation uses an `Int` route argument (`NavType.IntType`).
+  - Owns the two destinations and manually creates ViewModels via factories
+  - Uses `collectAsStateWithLifecycle()` for UI state collection
+  - Handles missing detail arguments with an explicit error state instead of defaulting to `0`
 
-## Dependency and build conventions
-- Versions and plugin IDs are centralized in `gradle/libs.versions.toml`.
-- App module configuration lives in `app/build.gradle.kts`.
-- Current stack includes:
-  - Compose Material 3
-  - Navigation Compose
-  - Lifecycle ViewModel + runtime KTX
-  - Retrofit + Gson converter
-  - Coroutines Android
-  - Kotlin serialization plugin and `kotlinx-serialization-json`
-- Important nuance: DTOs currently have `@Serializable`, but network calls use Retrofit with `GsonConverterFactory`, so Gson is the active runtime converter.
+## Current implementation conventions
 
-## Composition and UI conventions
-- `MainActivity` manually builds the repository using `CharacterRepositoryImpl(RickAndMortyApi.service)`; there is no DI framework such as Hilt or Dagger.
-- Screens are intentionally stateless where practical:
-  - pass in a sealed `uiState`
-  - pass event callbacks like `onRetry`, `onCharacterClick`, and `onBackClick`
-- Each navigation destination wraps its screen in a `Scaffold` and passes `innerPadding` down.
-- The list screen explicitly handles an empty list with a visible message.
-- Character images are loaded manually in Compose using `URL(...).openStream()` inside `LaunchedEffect` and `Dispatchers.IO`.
-- Preview safety matters: both list and detail image composables check `LocalInspectionMode.current` before attempting network image work.
-- The project does not currently use Coil or another dedicated image-loading library, even though that would be a common future improvement.
+### Compose and UI
+- Keep screens stateless where practical: pass in `uiState` and callbacks such as `onRetry`, `onCharacterClick`, and `onBackClick`
+- Image loading should go through `presentation/common/CharacterAsyncImage.kt`; do not reintroduce manual `URL(...).openStream()` image decoding in composables
+- Preview safety matters: shared image rendering checks `LocalInspectionMode` and falls back to placeholder content in previews
+- Navigation destinations may wrap screens in `Scaffold` and pass `innerPadding` down to the content composable
 
-## State management conventions
-- ViewModels expose immutable `StateFlow`s backed by private `MutableStateFlow`s.
+### State management
+- ViewModels expose immutable `StateFlow`s backed by private `MutableStateFlow`s
 - `CharactersViewModel` and `CharacterDetailViewModel` both:
   - start in `Loading`
   - trigger loading in `init`
   - cancel previous jobs before retrying
-  - catch generic exceptions and surface a user-facing message in UI state
-- Both ViewModels accept optional `CoroutineScope` and `CoroutineDispatcher` parameters, which are primarily there to support deterministic tests.
+  - set loading state immediately on retry
+  - map exceptions to user-facing messages with `toUserMessage(...)`
+- Both ViewModels accept optional `CoroutineScope` and `CoroutineDispatcher` parameters to support deterministic tests
 
-## Testing patterns to follow
-- Unit tests live under `app/src/test/java/com/example/rickandmortyexplorer/...`.
-- Existing tests cover:
+### Error handling
+- Keep raw exception details out of the UI
+- Extend `presentation/common/ThrowableMessage.kt` when new failure cases need user-friendly messages
+- Prefer mapping network and transport failures centrally rather than formatting ad hoc strings in each screen
+
+### Dependencies and build
+- Versions and plugin IDs are centralized in `gradle/libs.versions.toml`
+- App module configuration lives in `app/build.gradle.kts`
+- Active runtime stack includes:
+  - Compose Material 3
+  - Navigation Compose
+  - Lifecycle runtime compose + ViewModel
+  - Retrofit + Gson
+  - OkHttp
+  - Coil Compose
+  - Coroutines Android
+- Kotlin serialization is not part of the current runtime path
+
+## Testing conventions
+- Unit tests live under `app/src/test/java/com/example/rickandmortyexplorer/...`
+- Existing coverage includes:
   - DTO shape expectations: `data/remote/model/CharacterDtoSerializationTest.kt`
   - Repository mapping: `data/repository/CharacterRepositoryImplTest.kt`
   - ViewModel state transitions: `presentation/characters/CharactersViewModelTest.kt`
-- Coroutine tests currently use `TestCoroutineEnvironment` from `presentation/characters/MainDispatcherRule.kt`.
-- Prefer fake repositories or fake APIs over mocks when extending tests.
-- Prefer asserting public `uiState` transitions instead of testing private implementation details.
+  - Error message mapping: `presentation/common/ThrowableMessageTest.kt`
+- Coroutine tests use `TestCoroutineEnvironment` from `presentation/characters/MainDispatcherRule.kt`
+- Prefer fake repositories or fake APIs over mocks where practical
+- Prefer asserting public `uiState` transitions instead of private implementation details
 
 ## Workflow notes
-- Build with `./gradlew assembleDebug`.
-- Run unit tests with `./gradlew test`.
-- Run instrumented tests with `./gradlew connectedDebugAndroidTest` when a device/emulator is available.
-- The app requires `android.permission.INTERNET` in `app/src/main/AndroidManifest.xml` for API and image requests.
-- On this machine, Gradle may require `JAVA_HOME` to be pointed at Android Studio's bundled JBR if Java is not already on `PATH`.
+- Debug build:
+  - `./gradlew assembleDebug`
+- Unit tests:
+  - `./gradlew test`
+- Instrumented tests:
+  - `./gradlew connectedDebugAndroidTest`
+- The app requires `android.permission.INTERNET` in `app/src/main/AndroidManifest.xml`
+- On this machine, Gradle may require `JAVA_HOME` to point to Android Studio's bundled JBR:
+  - `C:\Program Files\Android\Android Studio\jbr`
 
-## Change guidance for future work
-- If you add new fields from the API, update all of these together:
+## Change guidance
+- If you add new API fields, update all of these together:
   - DTOs in `data/remote/model/`
-  - `CharacterMapper.kt`
+  - `data/mapper/CharacterMapper.kt`
   - `domain/model/Character.kt`
   - previews and tests that construct `Character`
-- If you change navigation routes or arguments, update both `NavRoutes.kt` and `AppNavHost.kt` in the same change.
-- Keep repository mapping logic in the data layer; do not leak DTOs into presentation code.
-- Preserve preview-safe image behavior unless you intentionally replace it with a dedicated image library.
-- When changing ViewModels, maintain the existing testability pattern of injectable dispatcher/scope.
-
-## Files to inspect first when making changes
-- `app/src/main/java/com/example/rickandmortyexplorer/MainActivity.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/navigation/AppNavHost.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/navigation/NavRoutes.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/data/repository/CharacterRepositoryImpl.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/data/remote/RickAndMortyApi.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/data/remote/CharacterApi.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/data/mapper/CharacterMapper.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/characters/CharactersViewModel.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/characterdetail/CharacterDetailViewModel.kt`
-- `app/src/test/java/com/example/rickandmortyexplorer/presentation/characters/CharactersViewModelTest.kt`
-
+- If you change navigation routes or arguments, update both `navigation/NavRoutes.kt` and `navigation/AppNavHost.kt`
+- Keep repository mapping logic in the data layer; do not leak DTOs into presentation code
+- Preserve the existing ViewModel testability pattern of injectable dispatcher/scope
+- Prefer small, incremental changes unless there is a clear need for a larger refactor such as DI, paging, or persistence

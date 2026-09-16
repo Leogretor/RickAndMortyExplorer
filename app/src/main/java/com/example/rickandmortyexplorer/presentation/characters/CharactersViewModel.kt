@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.rickandmortyexplorer.domain.repository.CharacterRepository
+import com.example.rickandmortyexplorer.presentation.common.toUserMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -33,15 +34,15 @@ class CharactersViewModel(
 
     fun loadCharacters() {
         loadJob?.cancel()
+        _uiState.value = CharactersUiState.Loading
         loadJob = scope.launch(ioDispatcher) {
-            _uiState.value = CharactersUiState.Loading
             _uiState.value = try {
                 CharactersUiState.Success(repository.getCharacters())
             } catch (cancellationException: CancellationException) {
                 throw cancellationException
             } catch (exception: Exception) {
                 CharactersUiState.Error(
-                    exception.message ?: "Failed to load characters."
+                    exception.toUserMessage("Unable to load characters right now.")
                 )
             }
         }

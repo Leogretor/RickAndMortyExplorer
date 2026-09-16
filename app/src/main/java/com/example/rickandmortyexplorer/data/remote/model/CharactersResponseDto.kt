@@ -1,14 +1,10 @@
 package com.example.rickandmortyexplorer.data.remote.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class CharactersResponseDto(
     val info: PageInfoDto,
     val results: List<CharacterDto>
 )
 
-@Serializable
 data class PageInfoDto(
     val count: Int,
     val pages: Int,
@@ -16,7 +12,6 @@ data class PageInfoDto(
     val prev: String?
 )
 
-@Serializable
 data class CharacterDto(
     val id: Int,
     val name: String,
@@ -32,7 +27,6 @@ data class CharacterDto(
     val created: String
 )
 
-@Serializable
 data class NamedApiResourceDto(
     val name: String,
     val url: String

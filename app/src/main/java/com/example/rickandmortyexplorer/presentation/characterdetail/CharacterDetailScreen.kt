@@ -1,12 +1,9 @@
 package com.example.rickandmortyexplorer.presentation.characterdetail
 
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,26 +16,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.rickandmortyexplorer.domain.model.Character
+import com.example.rickandmortyexplorer.presentation.common.CharacterAsyncImage
 import com.example.rickandmortyexplorer.ui.theme.RickAndMortyExplorerTheme
-import java.net.URL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @Composable
 fun CharacterDetailScreen(
@@ -55,6 +40,7 @@ fun CharacterDetailScreen(
             onBackClick = onBackClick,
             modifier = modifier
         )
+
         is CharacterDetailUiState.Success -> CharacterDetailContent(
             character = uiState.character,
             onBackClick = onBackClick,
@@ -90,7 +76,7 @@ private fun CharacterDetailError(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Button(
             onClick = onRetry,
@@ -124,14 +110,16 @@ private fun CharacterDetailContent(
             Text(text = "Back to list")
         }
 
-        DetailCharacterImage(
+        CharacterAsyncImage(
             imageUrl = character.image,
             contentDescription = "Portrait of ${character.name}",
             placeholderText = character.name.firstOrNull()?.uppercase() ?: "?",
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(24.dp)),
+            placeholderTextStyle = MaterialTheme.typography.displayMedium,
+            placeholderModifier = Modifier.padding(vertical = 72.dp)
         )
 
         Text(
@@ -161,51 +149,6 @@ private fun DetailField(label: String, value: String) {
     }
 }
 
-@Composable
-private fun DetailCharacterImage(
-    imageUrl: String,
-    contentDescription: String,
-    placeholderText: String,
-    modifier: Modifier = Modifier
-) {
-    val isPreview = LocalInspectionMode.current
-    var imageBitmap by remember(imageUrl) { mutableStateOf<ImageBitmap?>(null) }
-
-    LaunchedEffect(imageUrl, isPreview) {
-        if (isPreview || imageUrl.isBlank()) {
-            imageBitmap = null
-            return@LaunchedEffect
-        }
-
-        imageBitmap = withContext(Dispatchers.IO) {
-            runCatching {
-                URL(imageUrl).openStream().use(BitmapFactory::decodeStream)?.asImageBitmap()
-            }.getOrNull()
-        }
-    }
-
-    Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center
-    ) {
-        if (imageBitmap != null) {
-            Image(
-                bitmap = imageBitmap!!,
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Text(
-                text = placeholderText,
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 72.dp)
-            )
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun CharacterDetailScreenPreview() {
@@ -227,5 +170,3 @@ private fun CharacterDetailScreenPreview() {
         )
     }
 }
-
-
