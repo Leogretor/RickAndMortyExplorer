@@ -13,6 +13,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.rickandmortyexplorer.R
 import com.example.rickandmortyexplorer.domain.repository.CharacterRepository
 import com.example.rickandmortyexplorer.presentation.characterdetail.CharacterDetailScreen
 import com.example.rickandmortyexplorer.presentation.characterdetail.CharacterDetailUiState
@@ -21,6 +22,7 @@ import com.example.rickandmortyexplorer.presentation.characterdetail.CharacterDe
 import com.example.rickandmortyexplorer.presentation.characters.CharactersScreen
 import com.example.rickandmortyexplorer.presentation.characters.CharactersViewModel
 import com.example.rickandmortyexplorer.presentation.characters.CharactersViewModelFactory
+import com.example.rickandmortyexplorer.presentation.common.UiText
 
 @Composable
 fun AppNavHost(
@@ -64,14 +66,14 @@ fun AppNavHost(
                 ?.getInt(NavRoutes.CHARACTER_ID_ARG)
 
             if (characterId == null) {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CharacterDetailScreen(
-                        uiState = CharacterDetailUiState.Error("We couldn't open that character."),
-                        onRetry = { navController.popBackStack() },
-                        onBackClick = { navController.popBackStack() },
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                CharacterDetailScreen(
+                    uiState = CharacterDetailUiState.Error(
+                        UiText.StringResource(R.string.character_open_error)
+                    ),
+                    onRetry = { navController.popBackStack() },
+                    onBackClick = { navController.popBackStack() },
+                    modifier = Modifier.fillMaxSize()
+                )
                 return@composable
             }
 
@@ -83,15 +85,12 @@ fun AppNavHost(
             )
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                CharacterDetailScreen(
-                    uiState = uiState,
-                    onRetry = viewModel::loadCharacter,
-                    onBackClick = { navController.popBackStack() },
-                    modifier = Modifier.padding(innerPadding)
-                )
-            }
+            CharacterDetailScreen(
+                uiState = uiState,
+                onRetry = viewModel::loadCharacter,
+                onBackClick = { navController.popBackStack() },
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
-

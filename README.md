@@ -8,6 +8,7 @@ A small Android app built with **Kotlin**, **Jetpack Compose**, **MVVM**, **Retr
 - Opens a detail screen for an individual character
 - Handles loading, empty, and retry states
 - Loads character artwork with Coil
+- Uses Material-style top app bar navigation on the detail screen
 
 ## Architecture overview
 
@@ -32,9 +33,9 @@ Main runtime flow:
 
 `MainActivity` -> `navigation/AppNavHost.kt` -> ViewModels -> `domain/repository/CharacterRepository.kt` -> `data/repository/CharacterRepositoryImpl.kt` -> `data/remote/CharacterApi.kt`
 
-## Recent cleanup improvements
+## Recent improvements
 
-This repository now includes a small modernization pass focused on correctness and maintainability:
+### Cleanup pass
 
 - replaced manual `URL(...).openStream()` image loading with **Coil**
 - introduced a shared `CharacterAsyncImage` composable in `presentation/common/`
@@ -45,6 +46,14 @@ This repository now includes a small modernization pass focused on correctness a
 - removed unused Kotlin serialization setup so the build matches the actual Gson-based runtime behavior
 - removed the unused `RickAndMortyApiService.kt`
 
+### UI polish pass
+
+- introduced reusable `LoadingStateContent` and `ErrorStateContent` composables
+- added a small `UiText` abstraction so screens and ViewModels can use Android string resources cleanly
+- moved user-facing screen text and error messages into `strings.xml`
+- replaced the detail screen’s in-content back button with a proper Material `TopAppBar`
+- simplified `AppNavHost.kt` so the detail screen owns its own scaffold behavior
+
 ## Key files
 
 - `app/src/main/java/com/example/rickandmortyexplorer/MainActivity.kt`
@@ -52,7 +61,10 @@ This repository now includes a small modernization pass focused on correctness a
 - `app/src/main/java/com/example/rickandmortyexplorer/presentation/characters/CharactersScreen.kt`
 - `app/src/main/java/com/example/rickandmortyexplorer/presentation/characterdetail/CharacterDetailScreen.kt`
 - `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/CharacterAsyncImage.kt`
+- `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/ScreenStateContent.kt`
 - `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/ThrowableMessage.kt`
+- `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/UiText.kt`
+- `app/src/main/res/values/strings.xml`
 - `app/src/main/java/com/example/rickandmortyexplorer/data/remote/RickAndMortyApi.kt`
 
 ## Build and test
@@ -78,6 +90,7 @@ $env:Path="$env:JAVA_HOME\bin;$env:Path"
 ## Dependencies in active use
 
 - Jetpack Compose Material 3
+- Compose Material Icons Extended
 - Navigation Compose
 - Lifecycle ViewModel + runtime compose
 - Retrofit + Gson

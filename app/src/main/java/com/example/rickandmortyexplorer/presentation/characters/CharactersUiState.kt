@@ -1,10 +1,10 @@
 package com.example.rickandmortyexplorer.presentation.characters
 
 import com.example.rickandmortyexplorer.domain.model.Character
+import com.example.rickandmortyexplorer.presentation.common.UiText
 
 sealed interface CharactersUiState {
     data object Loading : CharactersUiState
     data class Success(val characters: List<Character>) : CharactersUiState
-    data class Error(val message: String) : CharactersUiState
+    data class Error(val message: UiText) : CharactersUiState
 }
-

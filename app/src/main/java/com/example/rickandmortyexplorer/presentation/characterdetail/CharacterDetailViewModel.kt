@@ -3,7 +3,9 @@ package com.example.rickandmortyexplorer.presentation.characterdetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.rickandmortyexplorer.R
 import com.example.rickandmortyexplorer.domain.repository.CharacterRepository
+import com.example.rickandmortyexplorer.presentation.common.UiText
 import com.example.rickandmortyexplorer.presentation.common.toUserMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -43,7 +45,7 @@ class CharacterDetailViewModel(
                 throw cancellationException
             } catch (exception: Exception) {
                 CharacterDetailUiState.Error(
-                    exception.toUserMessage("Unable to load character details right now.")
+                    exception.toUserMessage(UiText.StringResource(R.string.error_load_character_details))
                 )
             }
         }
@@ -64,4 +66,3 @@ class CharacterDetailViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
-

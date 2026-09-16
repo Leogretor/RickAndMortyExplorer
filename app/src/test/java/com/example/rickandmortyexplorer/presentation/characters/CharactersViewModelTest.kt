@@ -1,6 +1,9 @@
 package com.example.rickandmortyexplorer.presentation.characters
+
+import com.example.rickandmortyexplorer.R
 import com.example.rickandmortyexplorer.domain.model.Character
 import com.example.rickandmortyexplorer.domain.repository.CharacterRepository
+import com.example.rickandmortyexplorer.presentation.common.UiText
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -10,7 +13,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+
 class CharactersViewModelTest {
+
     @Test
     fun `uiState starts as loading while characters are being fetched`() {
         TestCoroutineEnvironment().use { environment ->
@@ -20,11 +25,14 @@ class CharactersViewModelTest {
                 ioDispatcher = environment.dispatcher,
                 coroutineScope = environment.scope
             )
+
             assertEquals(CharactersUiState.Loading, viewModel.uiState.value)
+
             gate.complete(sampleCharacters)
             awaitState(viewModel) { it is CharactersUiState.Success }
         }
     }
+
     @Test
     fun `uiState becomes success when repository returns characters`() {
         TestCoroutineEnvironment().use { environment ->
@@ -33,13 +41,16 @@ class CharactersViewModelTest {
                 ioDispatcher = environment.dispatcher,
                 coroutineScope = environment.scope
             )
+
             awaitState(viewModel) { it is CharactersUiState.Success }
+
             assertEquals(
                 CharactersUiState.Success(sampleCharacters),
                 viewModel.uiState.value
             )
         }
     }
+
     @Test
     fun `uiState becomes error when repository throws`() {
         TestCoroutineEnvironment().use { environment ->
@@ -48,15 +59,18 @@ class CharactersViewModelTest {
                 ioDispatcher = environment.dispatcher,
                 coroutineScope = environment.scope
             )
+
             awaitState(viewModel) { it is CharactersUiState.Error }
+
             val errorState = viewModel.uiState.value
             assertTrue(errorState is CharactersUiState.Error)
             assertEquals(
-                "Unable to load characters right now.",
+                UiText.StringResource(R.string.error_load_characters),
                 (errorState as CharactersUiState.Error).message
             )
         }
     }
+
     private fun awaitState(
         viewModel: CharactersViewModel,
         predicate: (CharactersUiState) -> Boolean
@@ -67,14 +81,17 @@ class CharactersViewModelTest {
             }
         }
     }
+
     private class FakeCharacterRepository(
         private val loader: suspend () -> List<Character>
     ) : CharacterRepository {
         override suspend fun getCharacters(): List<Character> = loader()
+
         override suspend fun getCharacterById(id: Int): Character {
             return loader().first { it.id == id }
         }
     }
+
     private companion object {
         val sampleCharacters = listOf(
             Character(

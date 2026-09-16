@@ -13,21 +13,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.rickandmortyexplorer.R
 import com.example.rickandmortyexplorer.domain.model.Character
 import com.example.rickandmortyexplorer.presentation.common.CharacterAsyncImage
+import com.example.rickandmortyexplorer.presentation.common.ErrorStateContent
+import com.example.rickandmortyexplorer.presentation.common.LoadingStateContent
+import com.example.rickandmortyexplorer.presentation.common.UiText
 import com.example.rickandmortyexplorer.ui.theme.RickAndMortyExplorerTheme
 
 @Composable
@@ -38,10 +40,11 @@ fun CharactersScreen(
     modifier: Modifier = Modifier
 ) {
     when (uiState) {
-        CharactersUiState.Loading -> LoadingContent(modifier)
-        is CharactersUiState.Error -> ErrorContent(
+        CharactersUiState.Loading -> LoadingStateContent(modifier)
+        is CharactersUiState.Error -> ErrorStateContent(
             message = uiState.message,
-            onRetry = onRetry,
+            primaryActionText = UiText.StringResource(R.string.retry),
+            onPrimaryAction = onRetry,
             modifier = modifier
         )
 
@@ -50,43 +53,6 @@ fun CharactersScreen(
             onCharacterClick = onCharacterClick,
             modifier = modifier
         )
-    }
-}
-
-@Composable
-private fun LoadingContent(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
-        Button(
-            onClick = onRetry,
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Text(text = "Retry")
-        }
     }
 }
 
@@ -101,7 +67,7 @@ private fun CharactersContent(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "No characters available.")
+            Text(text = stringResource(R.string.no_characters_available))
         }
         return
     }

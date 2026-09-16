@@ -1,5 +1,6 @@
 package com.example.rickandmortyexplorer.presentation.common
 
+import com.example.rickandmortyexplorer.R
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
@@ -15,16 +16,16 @@ class ThrowableMessageTest {
     @Test
     fun `maps unknown host to no internet message`() {
         assertEquals(
-            "No internet connection. Please try again.",
-            UnknownHostException().toUserMessage(DEFAULT_MESSAGE)
+            UiText.StringResource(R.string.error_no_internet),
+            UnknownHostException().toUserMessage(UiText.StringResource(R.string.error_load_characters))
         )
     }
 
     @Test
     fun `maps socket timeout to timeout message`() {
         assertEquals(
-            "The request timed out. Please try again.",
-            SocketTimeoutException().toUserMessage(DEFAULT_MESSAGE)
+            UiText.StringResource(R.string.error_timeout),
+            SocketTimeoutException().toUserMessage(UiText.StringResource(R.string.error_load_characters))
         )
     }
 
@@ -36,29 +37,24 @@ class ThrowableMessageTest {
         )
 
         assertEquals(
-            "We couldn't find that character.",
-            HttpException(response).toUserMessage(DEFAULT_MESSAGE)
+            UiText.StringResource(R.string.error_character_not_found),
+            HttpException(response).toUserMessage(UiText.StringResource(R.string.error_load_characters))
         )
     }
 
     @Test
     fun `maps generic io errors to server reachability message`() {
         assertEquals(
-            "We couldn't reach the server. Please try again.",
-            IOException().toUserMessage(DEFAULT_MESSAGE)
+            UiText.StringResource(R.string.error_server_unreachable),
+            IOException().toUserMessage(UiText.StringResource(R.string.error_load_characters))
         )
     }
 
     @Test
     fun `falls back to supplied default message for unexpected errors`() {
         assertEquals(
-            DEFAULT_MESSAGE,
-            IllegalStateException("Boom").toUserMessage(DEFAULT_MESSAGE)
+            UiText.StringResource(R.string.error_load_characters),
+            IllegalStateException("Boom").toUserMessage(UiText.StringResource(R.string.error_load_characters))
         )
     }
-
-    private companion object {
-        const val DEFAULT_MESSAGE = "Unable to load characters right now."
-    }
 }
-
