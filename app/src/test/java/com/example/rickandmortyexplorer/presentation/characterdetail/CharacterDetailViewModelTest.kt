@@ -83,8 +83,10 @@ class CharacterDetailViewModelTest {
     fun `retry loads character after an error`() =
         runTest(mainDispatcherRule.testDispatcher) {
             var attempts = 0
+            val requestedIds = mutableListOf<Int>()
             val viewModel = CharacterDetailViewModel(
-                repository = FakeCharacterRepository {
+                repository = FakeCharacterRepository { id ->
+                    requestedIds += id
                     attempts += 1
                     if (attempts == 1) {
                         throw IllegalStateException("Boom")
@@ -105,6 +107,7 @@ class CharacterDetailViewModelTest {
                 viewModel.uiState.value
             )
             assertEquals(2, attempts)
+            assertEquals(listOf(sampleCharacter.id, sampleCharacter.id), requestedIds)
         }
 
     private class FakeCharacterRepository(
