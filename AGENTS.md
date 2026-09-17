@@ -8,12 +8,17 @@
 - OkHttp
 - Kotlin coroutines
 - Coil for image loading
-Repository root:
-- `C:\Users\simon\AndroidStudioProjects\RickAndMortyExplorer`
+This file applies to the entire repository. Treat the directory containing this
+file as the repository root; do not rely on machine-specific absolute paths.
+
 App entry point:
 - `app/src/main/java/com/example/rickandmortyexplorer/MainActivity.kt`
 Main runtime flow:
-- `MainActivity` -> `navigation/AppNavHost.kt` -> ViewModels -> `domain/repository/CharacterRepository.kt` -> `data/repository/CharacterRepositoryImpl.kt` -> `data/remote/CharacterApi.kt` via `data/remote/RickAndMortyApi.kt`
+- `MainActivity` creates `CharacterRepositoryImpl` with the `CharacterApi`
+  service exposed by `RickAndMortyApi`
+- `MainActivity` -> `navigation/AppNavHost.kt` -> ViewModels ->
+  `domain/repository/CharacterRepository.kt` ->
+  `data/repository/CharacterRepositoryImpl.kt` -> `data/remote/CharacterApi.kt`
 ## High-level architecture
 The project uses a lightweight layered structure.
 ### Presentation layer
@@ -54,7 +59,7 @@ The project uses a lightweight layered structure.
   - Uses `collectAsStateWithLifecycle()` for UI state collection
   - Lets the detail screen own its scaffold/app bar
   - Handles missing detail arguments with an explicit resource-backed error state instead of defaulting to `0`
-## Current implementation conventions
+## Development rules
 ### Compose and UI
 - Keep screens stateless where practical: pass in `uiState` and callbacks such as `onRetry`, `onCharacterClick`, and `onBackClick`
 - Image loading should go through `presentation/common/CharacterAsyncImage.kt`; do not reintroduce manual `URL(...).openStream()` image decoding in composables
@@ -71,7 +76,8 @@ The project uses a lightweight layered structure.
   - cancel previous jobs before retrying
   - set loading state immediately on retry
   - map exceptions to `UiText` messages with `toUserMessage(...)`
-- Both ViewModels accept optional `CoroutineScope` and `CoroutineDispatcher` parameters to support deterministic tests
+- Both ViewModels use `viewModelScope` and accept an injectable
+  `CoroutineDispatcher` to support deterministic tests
 ### Error handling
 - Keep raw exception details out of the UI
 - Extend `presentation/common/ThrowableMessage.kt` when new failure cases need user-friendly messages
@@ -96,22 +102,29 @@ The project uses a lightweight layered structure.
   - DTO shape expectations: `data/remote/model/CharacterDtoSerializationTest.kt`
   - Repository mapping: `data/repository/CharacterRepositoryImplTest.kt`
   - ViewModel state transitions: `presentation/characters/CharactersViewModelTest.kt`
+  - Detail ViewModel state transitions and retry behavior:
+    `presentation/characterdetail/CharacterDetailViewModelTest.kt`
   - Error message mapping: `presentation/common/ThrowableMessageTest.kt`
-- Coroutine tests use `TestCoroutineEnvironment` from `presentation/characters/MainDispatcherRule.kt`
+- Coroutine tests use `MainDispatcherRule` from
+  `presentation/common/MainDispatcherRule.kt`
 - Prefer fake repositories or fake APIs over mocks where practical
 - Prefer asserting public `uiState` transitions instead of private implementation details
 - When UI state uses `UiText`, tests should assert the expected `UiText.StringResource(...)` where applicable
 ## Workflow notes
 - Debug build:
-  - `./gradlew assembleDebug`
+  - PowerShell: `.\gradlew.bat assembleDebug --console=plain`
+  - Unix-like shells: `./gradlew assembleDebug --console=plain`
 - Unit tests:
-  - `./gradlew test`
+  - PowerShell: `.\gradlew.bat test --console=plain`
+  - Unix-like shells: `./gradlew test --console=plain`
 - Instrumented tests:
-  - `./gradlew connectedDebugAndroidTest`
+  - PowerShell: `.\gradlew.bat connectedDebugAndroidTest --console=plain`
+  - Unix-like shells: `./gradlew connectedDebugAndroidTest --console=plain`
 - The app requires `android.permission.INTERNET` in `app/src/main/AndroidManifest.xml`
 - On this machine, Gradle may require `JAVA_HOME` to point to Android Studio's bundled JBR:
   - `C:\Program Files\Android\Android Studio\jbr`
 ## Change guidance
+- Do not edit generated output such as `.gradle/`, `build/`, or `app/build/`
 - If you add new API fields, update all of these together:
   - DTOs in `data/remote/model/`
   - `data/mapper/CharacterMapper.kt`
@@ -119,5 +132,8 @@ The project uses a lightweight layered structure.
   - previews and tests that construct `Character`
 - If you change navigation routes or arguments, update both `navigation/NavRoutes.kt` and `navigation/AppNavHost.kt`
 - Keep repository mapping logic in the data layer; do not leak DTOs into presentation code
-- Preserve the existing ViewModel testability pattern of injectable dispatcher/scope
+- Preserve the existing ViewModel testability pattern of an injectable dispatcher
 - Prefer small, incremental changes unless there is a clear need for a larger refactor such as DI, paging, or persistence
+- Run the smallest relevant unit-test target after a code change
+- Run `assembleDebug` when production code, resources, the manifest, or build
+  configuration changes
