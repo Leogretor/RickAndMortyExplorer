@@ -3,64 +3,65 @@ package com.example.rickandmortyexplorer.presentation.characters
 import com.example.rickandmortyexplorer.R
 import com.example.rickandmortyexplorer.domain.model.Character
 import com.example.rickandmortyexplorer.domain.repository.CharacterRepository
+import com.example.rickandmortyexplorer.presentation.common.MainDispatcherRule
 import com.example.rickandmortyexplorer.presentation.common.UiText
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CharactersViewModelTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     @Test
-    fun `uiState starts as loading while characters are being fetched`() {
-        TestCoroutineEnvironment().use { environment ->
-            val gate = CompletableDeferred<List<Character>>()
+    fun `uiState starts as loading while characters are being fetched`() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val characters = CompletableDeferred<List<Character>>()
             val viewModel = CharactersViewModel(
-                repository = FakeCharacterRepository { gate.await() },
-                ioDispatcher = environment.dispatcher,
-                coroutineScope = environment.scope
+                repository = FakeCharacterRepository { characters.await() },
+                ioDispatcher = mainDispatcherRule.testDispatcher
             )
 
             assertEquals(CharactersUiState.Loading, viewModel.uiState.value)
 
-            gate.complete(sampleCharacters)
-            awaitState(viewModel) { it is CharactersUiState.Success }
+            characters.complete(sampleCharacters)
+            advanceUntilIdle()
+
+            assertEquals(CharactersUiState.Success(sampleCharacters), viewModel.uiState.value)
         }
-    }
 
     @Test
-    fun `uiState becomes success when repository returns characters`() {
-        TestCoroutineEnvironment().use { environment ->
+    fun `uiState becomes success when repository returns characters`() =
+        runTest(mainDispatcherRule.testDispatcher) {
             val viewModel = CharactersViewModel(
                 repository = FakeCharacterRepository { sampleCharacters },
-                ioDispatcher = environment.dispatcher,
-                coroutineScope = environment.scope
+                ioDispatcher = mainDispatcherRule.testDispatcher
             )
 
-            awaitState(viewModel) { it is CharactersUiState.Success }
+            advanceUntilIdle()
 
             assertEquals(
                 CharactersUiState.Success(sampleCharacters),
                 viewModel.uiState.value
             )
         }
-    }
 
     @Test
-    fun `uiState becomes error when repository throws`() {
-        TestCoroutineEnvironment().use { environment ->
+    fun `uiState becomes error when repository throws`() =
+        runTest(mainDispatcherRule.testDispatcher) {
             val viewModel = CharactersViewModel(
                 repository = FakeCharacterRepository { throw IllegalStateException("Boom") },
-                ioDispatcher = environment.dispatcher,
-                coroutineScope = environment.scope
+                ioDispatcher = mainDispatcherRule.testDispatcher
             )
 
-            awaitState(viewModel) { it is CharactersUiState.Error }
+            advanceUntilIdle()
 
             val errorState = viewModel.uiState.value
             assertTrue(errorState is CharactersUiState.Error)
@@ -69,18 +70,6 @@ class CharactersViewModelTest {
                 (errorState as CharactersUiState.Error).message
             )
         }
-    }
-
-    private fun awaitState(
-        viewModel: CharactersViewModel,
-        predicate: (CharactersUiState) -> Boolean
-    ) = runBlocking {
-        withTimeout(1.seconds) {
-            while (!predicate(viewModel.uiState.value)) {
-                delay(10.milliseconds)
-            }
-        }
-    }
 
     private class FakeCharacterRepository(
         private val loader: suspend () -> List<Character>

@@ -105,7 +105,10 @@ private fun CharacterCard(
         ) {
             CharacterAsyncImage(
                 imageUrl = character.image,
-                contentDescription = "Portrait of ${character.name}",
+                contentDescription = stringResource(
+                    R.string.character_portrait_content_description,
+                    character.name
+                ),
                 placeholderText = character.name.firstOrNull()?.uppercase() ?: "?",
                 modifier = Modifier
                     .size(88.dp)

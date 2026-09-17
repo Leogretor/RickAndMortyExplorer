@@ -9,6 +9,7 @@
     <string name="character_status_label">Status</string>
     <string name="character_gender_label">Gender</string>
     <string name="character_origin_label">Origin</string>
+    <string name="character_portrait_content_description">Portrait of %1$s</string>
     <string name="error_no_internet">No internet connection. Please try again.</string>
     <string name="error_timeout">The request timed out. Please try again.</string>
     <string name="error_character_not_found">We couldn\'t find that character.</string>

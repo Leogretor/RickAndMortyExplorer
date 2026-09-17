@@ -1,77 +1,67 @@
 # RickAndMortyExplorer
 
-A small Android app built with **Kotlin**, **Jetpack Compose**, **MVVM**, **Retrofit**, and **coroutines** that explores characters from the Rick and Morty API.
+A small Android app that loads characters from the
+[Rick and Morty API](https://rickandmortyapi.com/), presents them in a list, and
+opens a detail screen when a character is selected.
 
-## What the app does
+## Features
 
-- Shows a list of Rick and Morty characters
-- Opens a detail screen for an individual character
-- Handles loading, empty, and retry states
-- Loads character artwork with Coil
-- Uses Material-style top app bar navigation on the detail screen
+- Character list and detail navigation
+- Loading, empty, and retryable error states
+- Lifecycle-aware UI state collection
+- Character images loaded with Coil
+- User-friendly handling of common network failures
 
-## Architecture overview
+## Technical approach
 
-The project is a single-module Android app with a lightweight layered structure:
+The app is a single-module Kotlin project using Jetpack Compose, MVVM, Retrofit,
+Gson, OkHttp, coroutines, and Navigation Compose.
 
-- `presentation/`
-  - Compose screens
-  - screen UI state models
-  - ViewModels
-  - shared UI helpers
-- `domain/`
-  - `Character` domain model
-  - `CharacterRepository` contract
-- `data/`
-  - Retrofit API interface and client
-  - DTOs and mappers
-  - repository implementation
-- `navigation/`
-  - app routes and Compose navigation host
+The code is separated into lightweight layers:
 
-Main runtime flow:
+- `presentation`: stateless Compose screens, UI state, and ViewModels
+- `domain`: the app-facing `Character` model and repository contract
+- `data`: Retrofit DTOs, mapping, and the repository implementation
+- `navigation`: routes and destination wiring
 
-`MainActivity` -> `navigation/AppNavHost.kt` -> ViewModels -> `domain/repository/CharacterRepository.kt` -> `data/repository/CharacterRepositoryImpl.kt` -> `data/remote/CharacterApi.kt`
+Runtime flow:
 
-## Recent improvements
+`MainActivity` -> `AppNavHost` -> ViewModels -> `CharacterRepository` ->
+`CharacterRepositoryImpl` -> `CharacterApi`
 
-### Cleanup pass
+## Design decisions
 
-- replaced manual `URL(...).openStream()` image loading with **Coil**
-- introduced a shared `CharacterAsyncImage` composable in `presentation/common/`
-- switched navigation destinations to lifecycle-aware state collection with `collectAsStateWithLifecycle()`
-- improved user-facing error handling with centralized throwable-to-message mapping
-- removed the unsafe `characterId ?: 0` fallback in detail navigation
-- added basic `OkHttpClient` timeouts to the Retrofit setup
-- removed unused Kotlin serialization setup so the build matches the actual Gson-based runtime behavior
-- removed the unused `RickAndMortyApiService.kt`
+- Screens receive state and callbacks instead of owning ViewModels, which keeps
+  UI rendering easy to preview and test.
+- ViewModels expose immutable `StateFlow` values and use explicit loading,
+  success, and error states.
+- Network DTOs are mapped to a small domain model before reaching the UI.
+- Stable UI copy is backed by string resources through `UiText`.
+- Image loading and common loading/error UI are shared to avoid duplicated
+  behavior.
+- Dependencies are wired manually in `MainActivity`. A DI framework would add
+  more setup than value at this project size.
 
-### UI polish pass
+## Scope and tradeoffs
 
-- introduced reusable `LoadingStateContent` and `ErrorStateContent` composables
-- added a small `UiText` abstraction so screens and ViewModels can use Android string resources cleanly
-- moved user-facing screen text and error messages into `strings.xml`
-- replaced the detail screen’s in-content back button with a proper Material `TopAppBar`
-- simplified `AppNavHost.kt` so the detail screen owns its own scaffold behavior
+The app intentionally loads only the first API page. Pagination, offline
+persistence, search, and dependency injection would be reasonable next steps
+for a production app, but were left out to keep this exercise focused on the
+requested list/detail flow.
 
-## Key files
+The detail screen fetches a character by ID instead of depending on list state.
+This adds one request but keeps the destination independently loadable.
 
-- `app/src/main/java/com/example/rickandmortyexplorer/MainActivity.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/navigation/AppNavHost.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/characters/CharactersScreen.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/characterdetail/CharacterDetailScreen.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/CharacterAsyncImage.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/ScreenStateContent.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/ThrowableMessage.kt`
-- `app/src/main/java/com/example/rickandmortyexplorer/presentation/common/UiText.kt`
-- `app/src/main/res/values/strings.xml`
-- `app/src/main/java/com/example/rickandmortyexplorer/data/remote/RickAndMortyApi.kt`
+## Testing
 
-## Build and test
+Unit tests cover:
 
-This workspace uses the Gradle wrapper.
+- DTO deserialization expectations
+- DTO-to-domain repository mapping
+- List and detail ViewModel state transitions and retries
+- User-facing throwable mapping
 
-### Unit tests
+Tests use `kotlinx-coroutines-test` for deterministic coroutine execution.
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
@@ -79,27 +69,10 @@ $env:Path="$env:JAVA_HOME\bin;$env:Path"
 .\gradlew.bat test --console=plain
 ```
 
-### Debug build
+Build a debug APK with:
 
 ```powershell
-$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
 .\gradlew.bat assembleDebug --console=plain
 ```
 
-## Dependencies in active use
-
-- Jetpack Compose Material 3
-- Compose Material Icons Extended
-- Navigation Compose
-- Lifecycle ViewModel + runtime compose
-- Retrofit + Gson
-- OkHttp
-- Coil Compose
-- Kotlin coroutines
-
-## Notes
-
-- `android.permission.INTERNET` is required for API and image requests.
-- The app currently fetches the first page of characters from the API.
-- There is no DI framework yet; dependencies are still wired manually for now.
+The app requires `android.permission.INTERNET` for API and image requests.

@@ -9,7 +9,6 @@ import com.example.rickandmortyexplorer.presentation.common.UiText
 import com.example.rickandmortyexplorer.presentation.common.toUserMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,16 +19,13 @@ import kotlinx.coroutines.launch
 class CharacterDetailViewModel(
     private val repository: CharacterRepository,
     private val characterId: Int,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val coroutineScope: CoroutineScope? = null
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CharacterDetailUiState>(CharacterDetailUiState.Loading)
     val uiState: StateFlow<CharacterDetailUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
-    private val scope: CoroutineScope
-        get() = coroutineScope ?: viewModelScope
 
     init {
         loadCharacter()
@@ -38,7 +34,7 @@ class CharacterDetailViewModel(
     fun loadCharacter() {
         loadJob?.cancel()
         _uiState.value = CharacterDetailUiState.Loading
-        loadJob = scope.launch(ioDispatcher) {
+        loadJob = viewModelScope.launch(ioDispatcher) {
             _uiState.value = try {
                 CharacterDetailUiState.Success(repository.getCharacterById(characterId))
             } catch (cancellationException: CancellationException) {
