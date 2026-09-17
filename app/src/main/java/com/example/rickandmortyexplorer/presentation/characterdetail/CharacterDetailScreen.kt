@@ -38,6 +38,7 @@ fun CharacterDetailScreen(
     uiState: CharacterDetailUiState,
     onRetry: () -> Unit,
     onBackClick: () -> Unit,
+    errorActionText: UiText = UiText.StringResource(R.string.retry),
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -63,7 +64,7 @@ fun CharacterDetailScreen(
 
             is CharacterDetailUiState.Error -> ErrorStateContent(
                 message = uiState.message,
-                primaryActionText = UiText.StringResource(R.string.retry),
+                primaryActionText = errorActionText,
                 onPrimaryAction = onRetry,
                 modifier = Modifier.padding(innerPadding)
             )

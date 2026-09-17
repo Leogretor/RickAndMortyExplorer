@@ -2,10 +2,14 @@ package com.example.rickandmortyexplorer.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -24,6 +28,7 @@ import com.example.rickandmortyexplorer.presentation.characters.CharactersViewMo
 import com.example.rickandmortyexplorer.presentation.characters.CharactersViewModelFactory
 import com.example.rickandmortyexplorer.presentation.common.UiText
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavHost(
     navController: NavHostController,
@@ -41,7 +46,14 @@ fun AppNavHost(
             )
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    TopAppBar(
+                        title = { Text(text = stringResource(R.string.characters_title)) }
+                    )
+                }
+            ) { innerPadding ->
                 CharactersScreen(
                     uiState = uiState,
                     onRetry = viewModel::loadCharacters,
@@ -70,6 +82,7 @@ fun AppNavHost(
                     uiState = CharacterDetailUiState.Error(
                         UiText.StringResource(R.string.character_open_error)
                     ),
+                    errorActionText = UiText.StringResource(R.string.back_to_list),
                     onRetry = { navController.popBackStack() },
                     onBackClick = { navController.popBackStack() },
                     modifier = Modifier.fillMaxSize()
